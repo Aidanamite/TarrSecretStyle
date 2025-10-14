@@ -12,14 +12,13 @@ using MonomiPark.SlimeRancher.DataModel;
 using UnityEngine.Experimental.Rendering;
 using System.Linq;
 using SRML.Utils.Enum;
-using SRML.Utils.Prefab;
 using SRML.SR.Patches;
 using SRML.Utils;
 using MonomiPark.SlimeRancher.Regions;
 using Secret_Style_Things.Utils;
 using System;
 using AssetsLib;
-using static AssetsLib.TextureUtils;
+using static AssetsLib.AssemblyUtils;
 
 using Object = UnityEngine.Object;
 using Console = SRML.Console.Console;
@@ -28,6 +27,7 @@ namespace TarrSecretStyle
 {
     public class Main : ModEntryPoint
     {
+        public const string VERSION = "1.1.2";
         internal static Assembly modAssembly = Assembly.GetExecutingAssembly();
         internal static string modName = $"{modAssembly.GetName().Name}";
         internal static string modDir = $"{Environment.CurrentDirectory}\\SRML\\Mods\\{modName}";
@@ -35,6 +35,7 @@ namespace TarrSecretStyle
         internal static Sprite digitarrSprite = LoadImage("digitarr_ss.png").CreateSprite();
         internal static Texture2D digitarrBackground = LoadImage("matrix2.png");
         internal static Sprite tarrGordoSprite = LoadImage("tarr_gordo_ss.png").CreateSprite();
+        internal static Sprite digitarrGordoSprite = LoadImage("digitarr_gordo_ss.png").CreateSprite();
         internal static Sprite tarrPlortSprite = LoadImage("tarr_plort_ss.png").CreateSprite();
         internal static GameObject tarrDeathFx;
         internal static GameObject tarrExoticDeathFx;
@@ -357,12 +358,14 @@ namespace TarrSecretStyle
                     }
                 }
             };
-            if (SRModLoader.IsModPresent("secretstylethings"))
+            if (SSTInteractions.HasSST())
             {
-                if (SRModLoader.IsModPresent("luckygordo") || SRModLoader.IsModPresent("tarrgordo"))
-                    SSTInteractions.SetupTarrGordo();
-                if (SRModLoader.IsModPresent("tarrrancher"))
-                    SSTInteractions.SetupTarrPlort();
+                if (Enum.TryParse("TARR_GORDO", true, out Identifiable.Id tarrGordo))
+                    SSTInteractions.SetupTarrGordo(tarrGordo);
+                if (Enum.TryParse("GLITCH_TARR_GORDO", true, out Identifiable.Id glitchTarrGordo))
+                    SSTInteractions.SetupGlitchTarrGordo(glitchTarrGordo);
+                if (Enum.TryParse("TARR_PLORT", true, out Identifiable.Id tarrPlort))
+                    SSTInteractions.SetupTarrPlort(tarrPlort);
             }
         }
 
@@ -556,10 +559,22 @@ namespace TarrSecretStyle
     }
     static class SSTInteractions
     {
-        internal static void SetupTarrGordo()
+        static int cachedHas;
+        internal static bool HasSST()
         {
-            var tarrGordoId = (Identifiable.Id)Enum.Parse(typeof(Identifiable.Id), "TARR_GORDO");
-            SlimeUtils.ExtraApperanceApplicators.Add(tarrGordoId, (x, y) =>
+            if (cachedHas == 0)
+                try
+                {
+                    TestSST();
+                    cachedHas = 1;
+                }
+                catch { cachedHas = -1; }
+            return cachedHas == 1;
+        }
+        static void TestSST() => SlimeUtils.ExtraApperanceApplicators?.GetType();
+        internal static void SetupTarrGordo(Identifiable.Id tarrGordoId)
+        {
+            SlimeUtils.ExtraApperanceApplicators[tarrGordoId] = (x, y) =>
             {
                 var top = x.Find("Vibrating/bone_root/bone_slime/bone_core/bone_jiggle_top/bone_skin_top");
                 if (y.SaveSet == SlimeAppearance.AppearanceSaveSet.SECRET_STYLE)
@@ -577,12 +592,23 @@ namespace TarrSecretStyle
                     if (stem)
                         Object.Destroy(stem.gameObject);
                 }
-            });
-            SlimeUtils.SecretStyleData.Add(tarrGordoId, new SecretStyleData(Main.tarrGordoSprite));
+            };
+            SlimeUtils.SecretStyleData[tarrGordoId] = new SecretStyleData(Main.tarrGordoSprite);
         }
-        internal static void SetupTarrPlort()
+        internal static void SetupGlitchTarrGordo(Identifiable.Id glitchTarrGordoId)
         {
-            var tarrPlortId = (Identifiable.Id)Enum.Parse(typeof(Identifiable.Id), "TARR_PLORT");
+            SlimeUtils.ExtraApperanceApplicators[glitchTarrGordoId] = (x, y) =>
+            {
+                if (y.SaveSet == SlimeAppearance.AppearanceSaveSet.SECRET_STYLE)
+                {
+                    var face = x.GetComponent<GordoFaceComponents>();
+                    face.chompOpenMouth = face.happyMouth;
+                }
+            };
+            SlimeUtils.SecretStyleData[glitchTarrGordoId] = new SecretStyleData(Main.digitarrGordoSprite);
+        }
+        internal static void SetupTarrPlort(Identifiable.Id tarrPlortId)
+        {
             SlimeUtils.SecretStyleData.Add(tarrPlortId, new SecretStyleData(Main.tarrPlortSprite));
             SlimeUtils.ExtraApperanceApplicators.Add(tarrPlortId, (x, y) =>
             {
