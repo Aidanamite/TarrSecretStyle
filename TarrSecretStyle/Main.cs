@@ -18,7 +18,7 @@ using MonomiPark.SlimeRancher.Regions;
 using Secret_Style_Things.Utils;
 using System;
 using AssetsLib;
-using static AssetsLib.AssemblyUtils;
+using static AssetsLib.TextureUtils;
 
 using Object = UnityEngine.Object;
 using Console = SRML.Console.Console;
@@ -27,7 +27,7 @@ namespace TarrSecretStyle
 {
     public class Main : ModEntryPoint
     {
-        public const string VERSION = "1.1.2";
+        public const string VERSION = "1.1.3";
         internal static Assembly modAssembly = Assembly.GetExecutingAssembly();
         internal static string modName = $"{modAssembly.GetName().Name}";
         internal static string modDir = $"{Environment.CurrentDirectory}\\SRML\\Mods\\{modName}";
